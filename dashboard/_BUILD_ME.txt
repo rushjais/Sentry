@@ -1,0 +1,1 @@
+Leave empty — Claude Code builds index.html here in Prompt 6 (the demo dashboard). It's the surface judges watch, so it gets a fresh design pass.
