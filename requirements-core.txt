@@ -1,0 +1,9 @@
+# SENTRY core — the self-hardening loop, orchestrator, and headless demo.
+# This is ALL you need for ./demo.sh and the browser dashboard. Installs in seconds.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+httpx>=0.27
+python-dotenv>=1.0
+websockets>=12          # prove_loop.py connects to the orchestrator's /ws directly
+openai>=1.30            # Nemotron via NIM (OpenAI-compatible) — patch-writer + agent LLM

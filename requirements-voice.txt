@@ -1,0 +1,7 @@
+# SENTRY voice stack — only needed for the LIVE call (agent/bot.py).
+# Heavy: pulls daily-python and silero/torch. Install on top of core:
+#   pip install -r requirements-core.txt -r requirements-voice.txt
+#
+# Pinned to match the canonical reference repo (pipecat-ai/nemotron-january-2026).
+# Imports verified empirically against this exact version; do not float it.
+pipecat-ai[silero,openai,deepgram,elevenlabs,daily,runner,webrtc]==0.0.98

@@ -55,20 +55,20 @@ NVIDIA NIM gives free OpenAI-compatible access to Nemotron. 1,000 free credits, 
 Pipecat is the orchestration framework Daily maintains. It has a **built-in `NvidiaLLMService`**, so Nemotron drops straight in.
 
 ```bash
-pip install "pipecat-ai[daily,deepgram,cartesia,nvidia,silero]"
+pip install -r requirements-voice.txt   # pinned pipecat-ai==0.0.98 + extras
 ```
 
 Get keys for the fast STT/TTS/transport layer (you know this from Strata):
 - **Daily** (transport): dashboard.daily.co → create a room → API key
 - **Deepgram** (STT): console.deepgram.com → API key
-- **Cartesia** (TTS): play.cartesia.ai → API key  *(or ElevenLabs if you prefer)*
+- **ElevenLabs** (TTS): elevenlabs.io → API key  *(this is what `agent/bot.py` uses)*
 
 Add to `.env`:
 ```
 DAILY_API_KEY=...
 DAILY_ROOM_URL=https://YOURDOMAIN.daily.co/sentry
 DEEPGRAM_API_KEY=...
-CARTESIA_API_KEY=...
+ELEVENLABS_API_KEY=...
 ```
 
 Then run the provided agent and **talk to it**:

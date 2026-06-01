@@ -105,30 +105,6 @@ def _call_nemotron(prompt: str) -> dict:
     return patch
 
 
-def _agent_turn_sync(system_prompt: str, utterance: str) -> str:
-    """One blocking agent turn under a given system prompt — same model the voice
-    agent uses. Used by the live-attack box to test the CURRENT config."""
-    resp = _client.chat.completions.create(
-        model=_MODEL,
-        messages=[{"role": "system", "content": system_prompt},
-                  {"role": "user", "content": utterance}],
-        temperature=0.4,
-        max_tokens=1024,  # headroom so reasoning tokens don't truncate the reply to empty
-    )
-    return (resp.choices[0].message.content or "").strip()
-
-
-async def run_agent_turn(system_prompt: str, utterance: str, timeout: float = 12.0) -> str:
-    """Async wrapper with timeout. On any failure returns "" (scored as a refusal,
-    never a leak — failing safe keeps the demo honest)."""
-    try:
-        return await asyncio.wait_for(
-            asyncio.to_thread(_agent_turn_sync, system_prompt, utterance), timeout=timeout
-        )
-    except Exception:  # noqa: BLE001
-        return ""
-
-
 async def generate_patch(failures: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Returns a patch dict. Tries Nemotron live; falls back to the cached patch
@@ -142,7 +118,7 @@ async def generate_patch(failures: List[Dict[str, Any]]) -> Dict[str, Any]:
         )
         patch["_source"] = "nemotron-live"
         return patch
-    except (asyncio.TimeoutError, ValueError, Exception) as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — timeout, bad JSON, or API error all fall back
         fallback = dict(CACHED_FALLBACK_PATCH)
         fallback["_source"] = f"cached-fallback ({type(e).__name__})"
         return fallback

@@ -32,9 +32,9 @@ The full break → harden → refuse loop runs headless in **mock mode** — no 
 ```bash
 git clone https://github.com/rushjais/Sentry.git && cd Sentry
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env          # optional: add NVIDIA_API_KEY for the live patch-writer
-./demo.sh                     # boots the orchestrator + proves the loop
+pip install -r requirements-core.txt   # the loop only — installs in seconds
+cp .env.example .env                    # optional: add NVIDIA_API_KEY for the live patch-writer
+./demo.sh                               # boots the orchestrator + proves the loop
 ```
 
 Expected tail:
@@ -45,6 +45,8 @@ Expected tail:
   after:  0/12 in ~14s
   RESULT: PASS ✓ red->green loop proven
 ```
+
+> **What's real vs. mock, honestly:** the self-hardening loop is fully real — failure clustering, the live Nemotron patch-writer (with a cached fallback), the in-memory config hot-swap, and the secure-policy swap all run for real. The **adversary** is what's mocked in this public demo: `CEKURA_MOCK=1` replays a known set of attack transcripts (`orchestrator/cekura_client.py::_MOCK_FAILURES`) instead of calling Cekura. The live Cekura REST path in that file is **stubbed** — the payload shapes are best-guesses and there's no run-completion polling yet, so wire it to your account before relying on it. The voice agent (`agent/bot.py`) is built but should be verified against your own Daily/Deepgram/ElevenLabs keys.
 
 ### Watch it in the browser
 
@@ -60,12 +62,14 @@ open dashboard/index.html
 
 ### Full voice demo (live call)
 
-Fill in the real keys in `.env` (Daily, Deepgram, ElevenLabs, NVIDIA), then add the voice agent:
+Install the voice stack and fill in the real keys in `.env` (Daily, Deepgram, ElevenLabs, NVIDIA):
 
 ```bash
-uvicorn orchestrator.main:app --port 8080     # terminal 1
-python agent/bot.py                           # terminal 2 — joins your DAILY_ROOM_URL
-open dashboard/index.html                      # terminal 3
+pip install -r requirements-voice.txt          # heavy: pipecat + daily + silero
+
+uvicorn orchestrator.main:app --port 8080      # terminal 1
+python agent/bot.py                            # terminal 2 — joins your DAILY_ROOM_URL
+open dashboard/index.html                       # terminal 3
 ```
 
 Join the Daily room in a browser and talk to Ava. Each spoken turn streams to the dashboard; when you click HARDEN, the running agent hot-swaps its prompt mid-call (no restart) and refuses the attacks it just fell for.
