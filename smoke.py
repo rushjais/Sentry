@@ -7,9 +7,11 @@ load_dotenv(dotenv_path=".env")   # explicit path — no auto-find
 try:
     c = OpenAI(base_url=os.getenv("NVIDIA_BASE_URL","https://integrate.api.nvidia.com/v1"),
                api_key=os.environ["NVIDIA_API_KEY"])
+    # Nemotron-nano emits a reasoning pass before content; too small a budget
+    # returns content=None. 2048 gives headroom so this never false-alarms.
     r = c.chat.completions.create(model=os.getenv("NVIDIA_MODEL","nvidia/nemotron-3-nano-30b-a3b"),
-        messages=[{"role":"user","content":"Say hello in 5 words."}], max_tokens=50)
-    print("NVIDIA OK:", r.choices[0].message.content.strip())
+        messages=[{"role":"user","content":"Say hello in 5 words."}], max_tokens=2048)
+    print("NVIDIA OK:", (r.choices[0].message.content or "").strip())
 except Exception as e:
     print("NVIDIA FAIL:", repr(e)[:200])
 
