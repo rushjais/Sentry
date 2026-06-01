@@ -104,13 +104,14 @@
   .rule .tag{display:block;color:var(--amber);font-size:.6rem;letter-spacing:.18em;margin-bottom:4px;}
 
   /* controls */
-  footer{display:grid; grid-template-columns:auto auto 1fr; gap:18px; align-items:center; height:64px;}
+  footer{display:grid; grid-template-columns:auto auto auto 1fr; gap:18px; align-items:center; height:64px;}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:14px;font-weight:800;
     letter-spacing:.18em;padding:0 38px;height:100%;font-size:1.2rem;transition:transform .1s,box-shadow .3s,filter .2s;}
   button:active{transform:translateY(2px)}
   button:disabled{opacity:.4;cursor:not-allowed}
   .unleash{background:linear-gradient(180deg,#ff4d6d,#c20e35);color:#fff;box-shadow:0 0 26px rgba(255,45,85,.5);}
   .harden{background:linear-gradient(180deg,#43f5b0,#0bbf7a);color:#04231a;box-shadow:0 0 26px rgba(31,255,159,.45);}
+  .reset{background:linear-gradient(180deg,#2a3548,#19212f);color:var(--ink);font-size:1rem;padding:0 26px;box-shadow:0 0 14px rgba(54,209,255,.18);}
   .hint{color:var(--dim);font-size:.8rem;letter-spacing:.06em;text-align:right;align-self:center;}
   /* AVA live-version badge — reflects the version Ava actually reports running */
   .ava{display:flex;align-items:center;gap:7px;border:1px solid var(--edge);padding:6px 12px;border-radius:999px;letter-spacing:.12em;}
@@ -177,13 +178,17 @@
     <footer>
       <button class="unleash" id="btnUnleash">⚡ UNLEASH</button>
       <button class="harden" id="btnHarden">🛡 HARDEN</button>
+      <button class="reset" id="btnReset">↺ RESET TO v0</button>
       <div class="hint">Attacks are spoken to the agent live on the call. This board visualizes them.</div>
     </footer>
   </div>
 
 <script>
+// Use 127.0.0.1 (not "localhost"): on macOS localhost often resolves to IPv6
+// ::1 first, but the orchestrator binds IPv4 127.0.0.1 — so a "localhost" WS
+// silently fails and the board never goes LIVE. 127.0.0.1 always matches.
 const ORIGIN = (location.protocol === "file:" || !location.host)
-  ? "http://localhost:8080" : location.origin.replace(/^http/,"http");
+  ? "http://127.0.0.1:8080" : location.origin.replace(/^http/,"http");
 const WS_URL = ORIGIN.replace(/^http/,"ws") + "/ws";
 
 const $ = id => document.getElementById(id);
@@ -278,6 +283,13 @@ function handle(ev){
       if(ev.taxonomy){ for(const k in tax) tax[k]=ev.taxonomy[k]||0; renderTax(); }
       setState("red"); stateword("red"); renderCounter();
       break;
+    case "reset":                    // re-armed to clean v0 for a fresh take
+      failCount=0; total=12; renderCounter(); resetTax(); resetTimer();
+      $("feed").innerHTML=""; feedN=0; $("feedcount").textContent="";
+      clearSteps();
+      if(ev.config_label) $("cfg").textContent=ev.config_label;
+      setState("idle"); stateword("idle");
+      break;
     case "harden_started":
       setState("hardening"); stateword("hardening"); clearSteps(); startTimer();
       addStep("Clustering " + failCount + " failures → " + ((ev.root_causes||[]).length||3) + " root causes");
@@ -332,6 +344,8 @@ async function post(path, bodyObj){
 }
 $("btnUnleash").onclick = ()=> post("/unleash");
 $("btnHarden").onclick  = ()=> post("/harden");
+$("btnReset").onclick   = async ()=>{ const d = await post("/reset");
+  if(d) toast("↺ Reset to "+(d.config_label||"v0")+" — Ava re-arming…", false); };
 renderCounter(); renderTax();
 </script>
 </body>

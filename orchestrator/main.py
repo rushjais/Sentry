@@ -105,6 +105,31 @@ async def active_prompt():
             "version": ACTIVE_CONFIG.version}
 
 
+@app.post("/reset")
+async def reset():
+    """Re-arm to a clean exploitable v0 for a fresh demo take — WITHOUT restarting
+    the process. The in-memory ACTIVE_CONFIG is sticky (a prior /harden mutates it
+    to v1 and it stays there), so between takes we swap it back to the pristine
+    EXPLOITABLE_V0 singleton. apply_patch is pure, so EXPLOITABLE_V0 was never
+    mutated — this genuinely restores v0.
+
+    Ava's config_watcher polls /active-prompt and swaps on any version change, so
+    going v1 -> v0 makes her re-fetch the exploitable prompt on her next poll and
+    report back via /agent-rearmed. We don't preset AGENT_VERSION here — Ava owns
+    that, so the dashboard reflects her REAL state once she actually re-arms."""
+    global ACTIVE_CONFIG, LAST_FAILURES, STATE
+    ACTIVE_CONFIG = EXPLOITABLE_V0
+    LAST_FAILURES = []
+    STATE = "idle"
+    await broadcast("reset",
+                    config_label=ACTIVE_CONFIG.label,
+                    config_version=ACTIVE_CONFIG.version,
+                    state="idle")
+    return {"state": STATE,
+            "config_label": ACTIVE_CONFIG.label,
+            "config_version": ACTIVE_CONFIG.version}
+
+
 @app.post("/unleash")
 async def unleash():
     """Fire the adversarial swarm. Collect failures. Go RED."""
