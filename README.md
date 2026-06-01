@@ -2,8 +2,6 @@
 
 **A voice agent that defends itself.** Call it, socially-engineer it into leaking a customer's card number — live, out loud — then watch it cluster its own failure, rewrite its guardrails with an LLM, hot-swap its config mid-call, and refuse the exact same attack seconds later. No human in the loop.
 
-Built for the Cekura × Daily Voice Agents Hackathon (NVIDIA + AWS).
-
 ```
 Reasoning:    NVIDIA Nemotron (via NIM, OpenAI-compatible)
 Voice:        Pipecat + Daily (WebRTC) · Deepgram STT · ElevenLabs TTS
