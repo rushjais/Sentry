@@ -38,3 +38,6 @@ Thumbs.db
 # ---- logs / runtime ----
 *.log
 /tmp/
+
+# internal hackathon strategy doc — kept locally, not shipped
+PLAN.md
