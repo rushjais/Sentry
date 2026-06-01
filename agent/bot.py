@@ -148,6 +148,13 @@ async def main():
     # assistant aggregator.
     transcript = TranscriptProcessor()
 
+    # ORDER MATTERS: transcript.assistant() must come immediately after
+    # transport.output() and BEFORE aggregator.assistant(). The assistant context
+    # aggregator consumes the TTSTextFrame/BotStoppedSpeakingFrame that
+    # AssistantTranscriptProcessor needs to detect end-of-turn; if the aggregator
+    # runs first it swallows them and the transcript processor never emits
+    # on_transcript_update — so Ava's spoken turns never reach /agent-turn and the
+    # live feed stays empty. This order matches the canonical pipecat example.
     pipeline = Pipeline([
         transport.input(),
         stt,
@@ -156,8 +163,8 @@ async def main():
         llm,
         tts,
         transport.output(),
-        aggregator.assistant(),
         transcript.assistant(),
+        aggregator.assistant(),
     ])
 
     # cancel_on_idle_timeout=False: Pipecat otherwise cancels the pipeline (Ava
@@ -190,6 +197,7 @@ async def main():
     @transcript.event_handler("on_transcript_update")
     async def _on_turn(_proc, frame):
         for m in frame.messages:
+            print(f"[sentry][transcript] role={m.role!r} content={(m.content or '')[:90]!r}", flush=True)
             if m.role == "user":
                 last_caller["text"] = (m.content or "").strip()
             elif m.role == "assistant":
@@ -199,16 +207,22 @@ async def main():
                     caller = ""
                 try:
                     async with httpx.AsyncClient(timeout=3) as c:
-                        await c.post(f"{ORCH}/agent-turn",
+                        r = await c.post(f"{ORCH}/agent-turn",
                                      json={"attacker": caller, "agent": (m.content or "").strip()})
-                except Exception:  # noqa: BLE001
-                    pass
+                    print(f"[sentry][post] /agent-turn -> {r.status_code} {r.json()}", flush=True)
+                except Exception as e:  # noqa: BLE001
+                    print(f"[sentry][post] /agent-turn FAILED: {e!r}", flush=True)
 
     # launch the hot-swap watcher alongside the pipeline
     asyncio.create_task(config_watcher(task, context, version))
 
     runner = PipelineRunner()
-    print(f"[sentry] agent live on {os.environ['DAILY_ROOM_URL']} (config v{version})")
+    exploitable = "intentionally misconfigured" in system_prompt
+    print(f"[sentry] agent live on {os.environ['DAILY_ROOM_URL']} "
+          f"(bound to {ORCH} · config v{version} · exploitable={exploitable})", flush=True)
+    if not exploitable:
+        print("[sentry] WARNING: fetched a NON-exploitable prompt — orchestrator is not at "
+              "v0. Ava will refuse from the start. Reset the orchestrator to v0.", flush=True)
     await runner.run(task)
 
 
